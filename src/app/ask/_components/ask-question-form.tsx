@@ -5,6 +5,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Wand2, LoaderCircle } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 import {
   Form,
@@ -20,13 +21,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RichTextEditor } from '@/components/rich-text-editor';
 import { TagInput } from '@/components/tag-input';
-import { suggestTagsAction } from '../actions';
+import { suggestTagsAction, askQuestionAction } from '../actions';
 import { useToast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
   title: z.string().min(10, 'Title must be at least 10 characters long.'),
   description: z.string().min(20, 'Description must be at least 20 characters long.'),
-  tags: z.array(z.string()).min(1, 'Please add at least one tag.'),
+  tags: z.array(z.string()).min(1, 'Please add at least one tag.').max(5, 'You can add up to 5 tags.'),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -34,6 +35,7 @@ type FormData = z.infer<typeof formSchema>;
 export function AskQuestionForm() {
   const [isSuggesting, setIsSuggesting] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -52,7 +54,7 @@ export function AskQuestionForm() {
       const result = await suggestTagsAction({ title, description });
       if (result.tags) {
         const currentTags = form.getValues('tags');
-        const newTags = [...new Set([...currentTags, ...result.tags])];
+        const newTags = [...new Set([...currentTags, ...result.tags])].slice(0, 5);
         form.setValue('tags', newTags, { shouldValidate: true });
         toast({
           title: 'Tags suggested!',
@@ -70,12 +72,29 @@ export function AskQuestionForm() {
     }
   };
 
-  const onSubmit = (data: FormData) => {
-    console.log(data);
-    toast({
-      title: 'Question Posted!',
-      description: 'Your question has been successfully submitted.',
-    });
+  const onSubmit = async (data: FormData) => {
+    try {
+      const result = await askQuestionAction(data);
+      if (result.success && result.questionId) {
+        toast({
+          title: 'Question Posted!',
+          description: 'Your question has been successfully submitted.',
+        });
+        router.push(`/questions/${result.questionId}`);
+      } else {
+         toast({
+          variant: 'destructive',
+          title: 'Failed to post question',
+          description: result.error,
+        });
+      }
+    } catch (error) {
+       toast({
+        variant: 'destructive',
+        title: 'An unexpected error occurred',
+        description: 'Please try again.',
+      });
+    }
   };
 
   return (
@@ -146,6 +165,7 @@ export function AskQuestionForm() {
                         <TagInput
                           value={controllerField.value}
                           onChange={controllerField.onChange}
+                          maxTags={5}
                         />
                       )}
                     />
@@ -172,7 +192,8 @@ export function AskQuestionForm() {
           </CardContent>
         </Card>
 
-        <Button type="submit" size="lg">
+        <Button type="submit" size="lg" disabled={form.formState.isSubmitting}>
+          {form.formState.isSubmitting && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
           Post Your Question
         </Button>
       </form>

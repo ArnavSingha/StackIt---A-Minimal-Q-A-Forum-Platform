@@ -10,7 +10,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   ArrowBigUp,
-  ArrowBigDown,
   MessageSquare,
   Eye,
   Tag as TagIcon,
@@ -61,8 +60,8 @@ export default async function Home() {
               </Link>
               <div className="flex flex-wrap gap-2 pt-2">
                 {question.tags.map((tag) => (
-                  <Badge key={tag.id} variant="outline">
-                    {tag.name}
+                  <Badge key={tag} variant="outline">
+                    {tag}
                   </Badge>
                 ))}
               </div>
@@ -75,7 +74,7 @@ export default async function Home() {
                 </div>
                 <div className="flex items-center gap-1" title="Answers">
                   <MessageSquare className="h-4 w-4" />
-                  <span>{question.answers.length}</span>
+                  <span>{question.answerCount}</span>
                 </div>
                 <div className="flex items-center gap-1" title="Views">
                   <Eye className="h-4 w-4" />

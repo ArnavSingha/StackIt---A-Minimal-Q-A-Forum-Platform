@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ArrowBigUp, ArrowBigDown, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface VoteButtonsProps {
   upvotes: number;
@@ -16,20 +17,25 @@ export function VoteButtons({ upvotes, downvotes, isAccepted = false }: VoteButt
   const [userVote, setUserVote] = useState<'up' | 'down' | null>(null);
 
   const handleVote = (type: 'up' | 'down') => {
-    if (type === userVote) {
-      // Undo vote
+    // This is a mock implementation. In a real app, you would call a server action.
+    if (userVote === type) {
+      // User is undoing their vote
       setUserVote(null);
       setVoteCount(voteCount + (type === 'up' ? -1 : 1));
     } else {
-      // New vote or change vote
-      const newVoteCount = voteCount + (type === 'up' ? 1 : -1) - (userVote ? (userVote === 'up' ? -1 : 1) : 0);
+      // New vote or changing vote
+      let newVoteCount = voteCount;
+      if (userVote === 'up') newVoteCount++;
+      if (userVote === 'down') newVoteCount--;
+      newVoteCount += type === 'up' ? 1 : -1;
+      
       setVoteCount(newVoteCount);
       setUserVote(type);
     }
   };
 
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex flex-col items-center gap-2 text-muted-foreground">
       <Button
         variant="ghost"
         size="icon"
@@ -38,7 +44,7 @@ export function VoteButtons({ upvotes, downvotes, isAccepted = false }: VoteButt
       >
         <ArrowBigUp className="h-6 w-6" />
       </Button>
-      <span className="text-xl font-bold">{voteCount}</span>
+      <span className="text-xl font-bold text-foreground">{voteCount}</span>
       <Button
         variant="ghost"
         size="icon"
@@ -48,7 +54,16 @@ export function VoteButtons({ upvotes, downvotes, isAccepted = false }: VoteButt
         <ArrowBigDown className="h-6 w-6" />
       </Button>
       {isAccepted && (
-        <CheckCircle2 className="h-8 w-8 text-green-500 mt-2" title="Accepted Answer" />
+         <TooltipProvider>
+            <Tooltip>
+                <TooltipTrigger>
+                    <CheckCircle2 className="h-8 w-8 text-green-500 mt-2" />
+                </TooltipTrigger>
+                <TooltipContent>
+                    <p>Accepted Answer</p>
+                </TooltipContent>
+            </Tooltip>
+        </TooltipProvider>
       )}
     </div>
   );
