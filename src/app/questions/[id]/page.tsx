@@ -2,13 +2,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import {
-  ArrowBigUp,
-  ArrowBigDown,
-  MessageSquare,
   Eye,
-  Tag as TagIcon,
-  CheckCircle2,
-  User,
+  CheckCircle2
 } from 'lucide-react';
 import { getQuestionById } from '@/lib/data';
 import {
@@ -24,13 +19,21 @@ import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { VoteButtons } from './_components/vote-buttons';
 import { AnswerForm } from './_components/answer-form';
+import { getCurrentUser } from '@/app/actions/auth';
+import { acceptAnswerAction } from './actions';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
 
 export default async function QuestionPage({ params }: { params: { id: string } }) {
   const question = await getQuestionById(params.id);
+  const currentUser = await getCurrentUser();
 
   if (!question) {
     notFound();
   }
+
+  const isQuestionOwner = currentUser?.id === question.author.id;
+  const hasAcceptedAnswer = question.answers.some(a => a.isAccepted);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-12">
@@ -67,8 +70,8 @@ export default async function QuestionPage({ params }: { params: { id: string } 
           <CardFooter className="flex flex-col items-start gap-4">
             <div className="flex flex-wrap gap-2">
               {question.tags.map((tag) => (
-                <Badge key={tag.id} variant="outline">
-                  {tag.name}
+                <Badge key={tag} variant="outline">
+                  {tag}
                 </Badge>
               ))}
             </div>
@@ -98,11 +101,31 @@ export default async function QuestionPage({ params }: { params: { id: string } 
               {question.answers.map((answer) => (
                 <Card key={answer.id} className={`transition-shadow ${answer.isAccepted ? 'border-green-500 shadow-lg' : ''}`}>
                   <CardContent className="py-6 flex gap-6">
-                     <VoteButtons
-                        upvotes={answer.upvotes}
-                        downvotes={answer.downvotes}
-                        isAccepted={answer.isAccepted}
-                      />
+                    <div className="flex flex-col items-center gap-2">
+                       <VoteButtons
+                          upvotes={answer.upvotes}
+                          downvotes={answer.downvotes}
+                          isAccepted={answer.isAccepted}
+                        />
+                        {isQuestionOwner && !answer.isAccepted && !hasAcceptedAnswer && (
+                          <form action={acceptAnswerAction}>
+                            <input type="hidden" name="questionId" value={question.id} />
+                            <input type="hidden" name="answerId" value={answer.id} />
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button type="submit" variant="outline" size="icon" className="h-10 w-10 mt-2 rounded-full border-gray-400 hover:border-green-500 hover:text-green-500">
+                                            <CheckCircle2 className="h-6 w-6" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Mark as accepted answer</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                          </form>
+                        )}
+                    </div>
                     <div className="flex-1">
                       <div
                         className="prose dark:prose-invert max-w-none mb-6"
@@ -130,7 +153,24 @@ export default async function QuestionPage({ params }: { params: { id: string } 
           </div>
         )}
 
-        <AnswerForm />
+        {currentUser ? (
+          <AnswerForm questionId={question.id} />
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle>Post Your Answer</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">
+                You must be{' '}
+                <Link href="/login" className="text-primary hover:underline">
+                  logged in
+                </Link>{' '}
+                to post an answer.
+              </p>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       <aside className="hidden lg:block">

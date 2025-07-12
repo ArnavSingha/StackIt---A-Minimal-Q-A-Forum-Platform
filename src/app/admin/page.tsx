@@ -61,7 +61,7 @@ export default async function AdminPage() {
                       ))}
                     </div>
                   </TableCell>
-                  <TableCell>{question.createdAt.toLocaleDateString()}</TableCell>
+                  <TableCell>{new Date(question.createdAt).toLocaleDateString()}</TableCell>
                   <TableCell>
                     <Link href={`/questions/${question.id}/edit`} className="text-primary hover:underline">Edit</Link>
                   </TableCell>

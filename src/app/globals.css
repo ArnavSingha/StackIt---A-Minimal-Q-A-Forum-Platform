@@ -69,4 +69,29 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+
+  .tiptap {
+    @apply prose dark:prose-invert max-w-none;
+    @apply rounded-md border border-input bg-background;
+    @apply min-h-[200px] p-4;
+    @apply focus:outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+  }
+
+  .tiptap p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    float: left;
+    color: hsl(var(--muted-foreground));
+    pointer-events: none;
+    height: 0;
+  }
+
+  .tiptap a {
+    @apply text-primary underline;
+  }
+  .tiptap ul {
+    @apply list-disc list-inside;
+  }
+  .tiptap ol {
+    @apply list-decimal list-inside;
+  }
 }
