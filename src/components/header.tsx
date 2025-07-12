@@ -11,8 +11,9 @@ import {
   Settings,
   Shield,
   LogIn,
+  LoaderCircle,
+  UserPlus,
 } from 'lucide-react';
-import type { User } from '@/types';
 import { logoutAction } from '@/app/actions/auth';
 import { useRouter } from 'next/navigation';
 
@@ -34,6 +35,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { CommuniQLogo } from './icons';
 import { Separator } from './ui/separator';
+import { useAuth } from '@/hooks/use-auth';
 
 const notifications = [
   { id: 1, text: 'John Doe answered your question about React Hooks.' },
@@ -41,17 +43,97 @@ const notifications = [
   { id: 3, text: 'Your answer was accepted for "How to center a div?".' },
 ];
 
-interface HeaderProps {
-    currentUser: User | null;
-}
-
-export function Header({ currentUser }: HeaderProps) {
+export function Header() {
   const router = useRouter();
+  const { currentUser, loading } = useAuth();
 
   const handleLogout = async () => {
     await logoutAction();
     router.push('/login');
     router.refresh();
+  };
+
+  const renderUserMenu = () => {
+    if (loading) {
+      return <LoaderCircle className="h-6 w-6 animate-spin" />;
+    }
+
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+            <Avatar className="h-10 w-10">
+              {currentUser ? (
+                <>
+                  <AvatarImage src={currentUser.avatarUrl} data-ai-hint="user avatar" alt={currentUser.name} />
+                  <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
+                </>
+              ) : (
+                <AvatarFallback>
+                    <UserIcon className="h-6 w-6" />
+                </AvatarFallback>
+              )}
+            </Avatar>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-56" align="end" forceMount>
+          {currentUser ? (
+            <>
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none">{currentUser.name}</p>
+                  <p className="text-xs leading-none text-muted-foreground">
+                    {currentUser.email}
+                  </p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>
+                <UserIcon className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Settings</span>
+              </DropdownMenuItem>
+              {currentUser.role === 'admin' && (
+                <DropdownMenuItem asChild>
+                  <Link href="/admin">
+                    <Shield className="mr-2 h-4 w-4" />
+                    <span>Admin</span>
+                  </Link>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
+              </DropdownMenuItem>
+            </>
+          ) : (
+            <>
+               <DropdownMenuItem asChild>
+                <Link href="/login">
+                  <LogIn className="mr-2 h-4 w-4" />
+                  <span>Log In</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/signup">
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  <span>Sign Up</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+               <DropdownMenuItem>
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Settings</span>
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
   };
 
   return (
@@ -75,95 +157,47 @@ export function Header({ currentUser }: HeaderProps) {
             </Button>
           </Link>
 
-        {currentUser ? (
-          <>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5" />
-                <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
-                  {notifications.length}
-                </span>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-80">
-              <div className="grid gap-4">
-                <div className="space-y-2">
-                  <h4 className="font-medium leading-none">Notifications</h4>
-                  <p className="text-sm text-muted-foreground">
-                    You have {notifications.length} unread messages.
-                  </p>
-                </div>
-                <div className="grid gap-2">
-                  {notifications.map((notification) => (
-                    <div
-                      key={notification.id}
-                      className="flex items-start gap-4 p-2 -mx-2 rounded-lg hover:bg-secondary"
-                    >
-                      <Bell className="mt-1 h-4 w-4 text-primary" />
+          {currentUser && (
+            <>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className="relative">
+                    <Bell className="h-5 w-5" />
+                    <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+                      {notifications.length}
+                    </span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80">
+                  <div className="grid gap-4">
+                    <div className="space-y-2">
+                      <h4 className="font-medium leading-none">Notifications</h4>
                       <p className="text-sm text-muted-foreground">
-                        {notification.text}
+                        You have {notifications.length} unread messages.
                       </p>
                     </div>
-                  ))}
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
-
-          <Separator orientation="vertical" className="h-8" />
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={currentUser.avatarUrl} data-ai-hint="user avatar" alt={currentUser.name} />
-                    <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end" forceMount>
-                <DropdownMenuLabel className="font-normal">
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{currentUser.name}</p>
-                    <p className="text-xs leading-none text-muted-foreground">
-                      {currentUser.email}
-                    </p>
+                    <div className="grid gap-2">
+                      {notifications.map((notification) => (
+                        <div
+                          key={notification.id}
+                          className="flex items-start gap-4 p-2 -mx-2 rounded-lg hover:bg-secondary"
+                        >
+                          <Bell className="mt-1 h-4 w-4 text-primary" />
+                          <p className="text-sm text-muted-foreground">
+                            {notification.text}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <UserIcon className="mr-2 h-4 w-4" />
-                  <span>Profile</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
-                </DropdownMenuItem>
-                 {currentUser.role === 'admin' && (
-                  <DropdownMenuItem asChild>
-                     <Link href="/admin">
-                      <Shield className="mr-2 h-4 w-4" />
-                      <span>Admin</span>
-                    </Link>
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                </PopoverContent>
+              </Popover>
+              <Separator orientation="vertical" className="h-8" />
             </>
-        ) : (
-            <Link href="/login" passHref>
-                <Button variant="outline">
-                    <LogIn className="mr-2 h-5 w-5" />
-                    Log In
-                </Button>
-            </Link>
-        )}
+          )}
+          
+          {renderUserMenu()}
+          
         </div>
       </div>
     </header>

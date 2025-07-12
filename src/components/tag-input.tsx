@@ -10,16 +10,17 @@ interface TagInputProps {
   value: string[];
   onChange: (tags: string[]) => void;
   className?: string;
+  maxTags?: number;
 }
 
-export function TagInput({ value, onChange, className }: TagInputProps) {
+export function TagInput({ value, onChange, className, maxTags = 5 }: TagInputProps) {
   const [inputValue, setInputValue] = useState('');
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault();
       const newTag = inputValue.trim().toLowerCase();
-      if (newTag && !value.includes(newTag)) {
+      if (newTag && !value.includes(newTag) && value.length < maxTags) {
         onChange([...value, newTag]);
       }
       setInputValue('');
@@ -50,7 +51,8 @@ export function TagInput({ value, onChange, className }: TagInputProps) {
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="Type a tag and press Enter"
+        placeholder={value.length >= maxTags ? `You can add up to ${maxTags} tags` : "Type a tag and press Enter"}
+        disabled={value.length >= maxTags}
       />
     </div>
   );
